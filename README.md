@@ -12,3 +12,6 @@ Trains a simple NN model to predict the claim amount per year based on the provi
 
 # data_load.py
 Loads the data from the provided arff file and converts data types.
+
+# data_vis.py
+Visualizes the data to get a better understanding of the data. Simple correlation and distribution plots.
