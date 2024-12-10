@@ -10,6 +10,6 @@ if __name__ == '__main__':
     classifier, regressor, test_data = train_NN_model()
     metrics_NN = evaluate_model(classifier, regressor, test_data)
 
-    print("MAE for GLM: ", metrics_glm)
-    print("MAE for NN: ", metrics_NN)
-
+    for metric in metrics_glm:
+        print(f"{metric} for GLM: ", metrics_glm[metric])
+        print(f"{metric} for NN: ", metrics_NN[metric])

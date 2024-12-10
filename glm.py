@@ -46,13 +46,13 @@ def preprocess_data_glm(data_full):
 def GLM_model(data_):
     """
     Fit a GLM model to the data
+    Model the frequency and severity separately to handle the zero-inflation
     :param data_: the full dataset
     :return: None
     """
     data_full = data_.copy()
     data_full = data_full[data_full['Exposure'] > 0]
 
-    # Model the frequency and severity separately to handle the zero-inflation
     # For frequency, we use Poisson distribution as the target variable is a count
     model_freq = smf.glm(
         'ClaimNb ~ DrivAge + VehPower + VehAge + BonusMalus + VehBrand + VehGas + Region + Area + Density',
@@ -62,10 +62,14 @@ def GLM_model(data_):
     ).fit()
     print(model_freq.summary())
 
-    # For severity, we use the Gamma distribution as the target variable is continuous
-    data_full['LogClaimAmount'] = np.log1p(data_full['ClaimAmount'])
-    severity_data = data_full[data_full['ClaimAmount'] > 0]  # Filter positive claims
+    # Normalize the claim amount by the exposure and log-transform it to counteract the skewness
     data_full['NormalizedClaimAmount'] = data_full['ClaimAmount'] / data_full['Exposure']
+    data_full['LogClaimAmount'] = np.log1p(data_full['NormalizedClaimAmount'])
+
+    # We only model the severity for the rows with ClaimAmount > 0
+    severity_data = data_full[data_full['ClaimAmount'] > 0]
+
+    # For severity, we use the Gamma distribution as the target variable is continuous
     model_sev = smf.glm(
         'LogClaimAmount ~ DrivAge + VehPower + VehAge + BonusMalus + VehBrand + VehGas + Region + Area + Density',
         data=severity_data, family=sm.families.Gamma()
@@ -75,9 +79,8 @@ def GLM_model(data_):
     # Frequency prediction: For the entire dataset
     freq_pred = model_freq.predict()
 
-    # Severity prediction: Only for rows with ClaimAmount > 0
-    sev_pred = np.zeros(data_full.shape[0])  # Initialize with zeros
-    sev_pred[data_full['ClaimAmount'] > 0] = np.expm1(model_sev.predict())  # Fill positive claims
+    # Severity prediction: Now for all rows
+    sev_pred = np.expm1(model_sev.predict(data_full))
 
     # Calculate Expected Claim Cost
     data_full['ExpectedClaimCost'] = freq_pred * sev_pred * data_full['Exposure']
@@ -96,10 +99,12 @@ def evaluate_glm(glm_freq, glm_sev, test_data):
 
     MAE = torch.mean(
         torch.abs(torch.Tensor(np.array(prediction)) - torch.Tensor(np.array(test_data['ClaimAmount'])))).item()
+    RMSE = torch.sqrt(torch.mean((torch.Tensor(np.array(prediction)) - torch.Tensor(np.array(test_data['ClaimAmount']))) ** 2)).item()
 
     print(f"GLM MAE: {MAE}")
+    print(f"GLM RMSE: {RMSE}")
 
-    return MAE
+    return {'MAE': MAE, 'RMSE': RMSE}
 
 
 def train_glm():
@@ -112,3 +117,9 @@ def train_glm():
 
     glm_pred, glm_freq, glm_sev = GLM_model(data_train)
     return glm_pred, glm_freq, glm_sev, data_test
+
+
+if __name__ == '__main__':
+    glm_pred, glm_freq, glm_sev, data_test = train_glm()
+    metrics_glm = evaluate_glm(glm_freq, glm_sev, data_test)
+    print(metrics_glm)

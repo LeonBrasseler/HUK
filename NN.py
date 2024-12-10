@@ -6,7 +6,6 @@ import pandas as pd
 
 from data_load import load_data
 
-
 GPU = torch.cuda.is_available()
 device = torch.device("cuda" if GPU else "cpu")
 
@@ -78,23 +77,26 @@ def train_classifier(train_data):
     :return: trained model
     """
     model = nn.Sequential(
-        nn.Linear(train_data.shape[1] - 4, 64),
+        nn.Linear(train_data.shape[1] - 4, 128),
         nn.ReLU(),
         nn.Dropout(0.2),
-        nn.Linear(64, 32),
+        nn.Linear(128, 128),
         nn.ReLU(),
         nn.Dropout(0.2),
-        nn.Linear(32, 1),
+        nn.Linear(128, 64),
+        nn.ReLU(),
+        nn.Dropout(0.2),
+        nn.Linear(64, 1),
         nn.Sigmoid()
     )
 
     loss_fn = nn.BCELoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
+    optimizer = optim.Adam(model.parameters(), lr=0.0001)
 
     model.train()
     has_claim = torch.Tensor(train_data['HasClaim'].values)
     train_data = torch.Tensor(train_data.drop(columns=['IDpol', 'ClaimAmount', 'LogClaimAmount', 'HasClaim']).values)
-    batch_size = 256
+    batch_size = 512
     train_data = torch.split(train_data.to(device), batch_size)
     has_claim = torch.split(has_claim.to(device), batch_size)
     model.to(device)
@@ -122,32 +124,42 @@ def train_regressor(train_data):
     :return: model to predict the claim amount
     """
     model = nn.Sequential(
-        nn.Linear(train_data.shape[1] - 4, 64),
+        nn.Linear(train_data.shape[1] - 4, 128),
         nn.ReLU(),
         nn.Dropout(0.2),
-        nn.Linear(64, 32),
+        nn.Linear(128, 128),
         nn.ReLU(),
         nn.Dropout(0.2),
-        nn.Linear(32, 1)
+        nn.Linear(128, 64),
+        nn.ReLU(),
+        nn.Dropout(0.2),
+        nn.Linear(64, 1),
+        nn.ReLU()
     )
     model.to(device)
 
-    loss_fn = nn.MSELoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
+    loss_fn = nn.SmoothL1Loss()
+    optimizer = optim.Adam(model.parameters(), lr=0.0001)
 
     LogClaimAmount = torch.Tensor(train_data['LogClaimAmount'].values).to(device)
     train_data = torch.Tensor(
-                train_data.drop(columns=['IDpol', 'ClaimAmount', 'LogClaimAmount', 'HasClaim']).values
-        ).to(device)
-    for epoch in range(50):
-        model.train()
-        optimizer.zero_grad()
-        outputs = model(train_data)
-        loss = loss_fn(outputs.squeeze(), LogClaimAmount)
-        loss.backward()
-        optimizer.step()
+        train_data.drop(columns=['IDpol', 'ClaimAmount', 'LogClaimAmount', 'HasClaim']).values
+    ).to(device)
+    LogClaimAmount = torch.split(LogClaimAmount, 512)
+    train_data = torch.split(train_data, 512)
+    model.train()
+    for epoch in range(100):
+        epoch_loss = 0
+        for x, y in zip(train_data, LogClaimAmount):
+            optimizer.zero_grad()
+            outputs = model(x)
+            loss = loss_fn(outputs.squeeze(), y)
+            loss.backward()
+            optimizer.step()
 
-        print(f"Epoch {epoch + 1}, Loss: {loss.item()}")
+            epoch_loss += loss.item()
+
+        print(f"Epoch {epoch + 1}, Loss: {epoch_loss}")
 
     return model
 
@@ -182,9 +194,12 @@ def evaluate_model(classifier, regressor, test_data):
         predictions *= np.expm1(regressor_outputs.squeeze().to('cpu').numpy())
 
         mae = np.mean(np.abs(predictions - test_data['ClaimAmount'].values))
-        print(f"Test MAE: {mae}")
+        rmse = np.sqrt(np.mean((predictions - test_data['ClaimAmount'].values) ** 2))
 
-    return mae
+        print(f"Test MAE: {mae}")
+        print(f"Test RMSE: {rmse}")
+
+    return {'MAE': mae, 'RMSE': rmse}
 
 
 if __name__ == '__main__':

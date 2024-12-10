@@ -1,17 +1,26 @@
-# Code for the Data science coding Challenge
-Trained a GLM model and a simple NN model to calculate the claim amount per year based on the provided input features.
+# Data Science Coding Challenge
 
-# Train
-Runs both models after each other and prints their MAE
+This project involves training a Generalized Linear Model (GLM) and a simple Neural Network (NN) model to predict the 
+annual claim amount based on provided input features. The dataset is highly imbalanced, with most contracts not 
+resulting in a claim, making the data sparse. Additionally, some claims are extremely high, leading to skewed data.
 
-# glm.py
-Trains a GLM model to predict the claim amount per year based on the provided input features.
+## Files
 
-# nn.py
-Trains a simple NN model to predict the claim amount per year based on the provided input features.
+### `train.py`
+Runs both models sequentially and prints their Mean Absolute Error (MAE) and Root Mean Square Error (RMSE).
 
-# data_load.py
-Loads the data from the provided arff file and converts data types.
+### `glm.py`
+Trains two GLM models to predict the annual claim amount based on the provided input features.
+The model is split into a frequency model trained using a Poisson distribution and a log link function and a severity
+model using a Gamma distribution. The final prediction is the product of the frequency and severity models.
 
-# data_vis.py
-Visualizes the data to get a better understanding of the data. Simple correlation and distribution plots.
+### `nn.py`
+Trains two simple NN models to predict the annual claim amount based on the provided input features.
+Similar to the GLM model, the NN model is split into a frequency model predicting the probability of a claim and a 
+regression model predicting the severity.
+
+### `data_load.py`
+Loads the data from the provided ARFF file and converts data types.
+
+### `data_vis.py`
+Visualizes the data to provide a better understanding through simple correlation and distribution plots.
