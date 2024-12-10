@@ -130,10 +130,6 @@ def evaluate_model(classifier, regressor, test_data):
         classifier_outputs = classifier(torch.Tensor(test_data.drop(columns=['IDpol', 'ClaimAmount', 'LogClaimAmount', 'HasClaim']).values))
         regressor_outputs = regressor(torch.Tensor(test_data.drop(columns=['IDpol', 'ClaimAmount', 'LogClaimAmount', 'HasClaim']).values))
 
-        predictions = np.zeros(test_data.shape[0])
-        predictions[test_data['HasClaim'] == 1] = np.expm1(regressor_outputs.squeeze().numpy())
-        predictions[test_data['HasClaim'] == 0] = 0
-
         predictions = classifier_outputs.squeeze().numpy()
         predictions *= regressor_outputs.squeeze().numpy()
 
