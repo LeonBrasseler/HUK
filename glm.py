@@ -29,6 +29,11 @@ def preprocess_data_glm(data_full):
     # data_full['DrivAge'] = pd.cut(data_full['DrivAge'], bins=[np.min(data_full['DrivAge'])-1, 21, 26, 31, 41, 51, 71, np.inf],
     #                               labels=[0, 1, 2, 3, 4, 5, 6])
 
+    # Scale numerical variables
+    data_full['VehPower'] = (data_full['VehPower'] - data_full['VehPower'].mean()) / data_full['VehPower'].std()
+    data_full['VehAge'] = (data_full['VehAge'] - data_full['VehAge'].mean()) / data_full['VehAge'].std()
+    data_full['DrivAge'] = (data_full['DrivAge'] - data_full['DrivAge'].mean()) / data_full['DrivAge'].std()
+
     # Cap BonusMalus at 150
     data_full['BonusMalus'] = data_full['BonusMalus'].clip(upper=150)
 
@@ -50,8 +55,8 @@ def GLM_model(data_):
     # Model the frequency and severity separately to handle the zero-inflation
     # For frequency, we use Poisson distribution as the target variable is a count
     model_freq = smf.glm(
-        'ClaimNb ~ DrivAge + VehPower + VehAge + BonusMalus + VehBrand + VehGas + Region + Area + Density +'
-        '+ (DrivAge^2) + (DrivAge^3) + (VehPower^2) + (VehPower^3) + (VehAge^2) + (VehAge^3)',
+        'ClaimNb ~ DrivAge + VehPower + VehAge + BonusMalus + VehBrand + VehGas + Region + Area + Density',
+        # '+ (DrivAge^2) + (DrivAge^3) + (VehPower^2) + (VehPower^3) + (VehAge^2) + (VehAge^3)',
         data=data_full, family=sm.families.Poisson(),
         offset=np.log(data_full['Exposure'])
     ).fit()
