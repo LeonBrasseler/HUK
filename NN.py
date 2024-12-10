@@ -179,7 +179,7 @@ def evaluate_model(classifier, regressor, test_data):
         # Predicted claim amount is the product of the classifier output (chance of having a claim) and
         # the regressor output (amount of the claim)
         predictions = classifier_outputs.squeeze().to('cpu').numpy()
-        predictions *= regressor_outputs.squeeze().to('cpu').numpy()
+        predictions *= np.expm1(regressor_outputs.squeeze().to('cpu').numpy())
 
         mae = np.mean(np.abs(predictions - test_data['ClaimAmount'].values))
         print(f"Test MAE: {mae}")

@@ -92,7 +92,7 @@ def evaluate_glm(glm_freq, glm_sev, test_data):
     :param test_data: the test data
     :return: metric values
     """
-    prediction = glm_freq.predict(test_data) * glm_sev.predict(test_data) * test_data['Exposure']
+    prediction = glm_freq.predict(test_data) * np.expm1(glm_sev.predict(test_data)) * test_data['Exposure']
 
     MAE = torch.mean(
         torch.abs(torch.Tensor(np.array(prediction)) - torch.Tensor(np.array(test_data['ClaimAmount'])))).item()
