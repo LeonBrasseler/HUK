@@ -4,6 +4,8 @@ This project involves training a Generalized Linear Model (GLM) and a simple Neu
 annual claim amount based on provided input features. The dataset is highly imbalanced, with most contracts not 
 resulting in a claim, making the data sparse. Additionally, some claims are extremely high, leading to skewed data.
 
+XGBoost to predict chance combined with the Gamma distribution to predict the annual claim amount currently works "best".
+
 ## Files
 
 ### `train.py`
@@ -18,6 +20,10 @@ model using a Gamma distribution. The final prediction is the product of the fre
 Trains two simple NN models to predict the annual claim amount based on the provided input features.
 Similar to the GLM model, the NN model is split into a frequency model predicting the probability of a claim and a 
 regression model predicting the severity.
+
+### `XGBoost.py`
+Trains an XGBoost model to predict the chance of a claim and then combines that with a Gamma distribution to predict the
+annual claim amount.
 
 ### `data_load.py`
 Loads the data from the provided ARFF file and converts data types.

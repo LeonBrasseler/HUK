@@ -10,11 +10,12 @@ GPU = torch.cuda.is_available()
 device = torch.device("cuda" if GPU else "cpu")
 
 
-def preprocess(data_):
+def preprocess(data_, categorical_type='OH'):
     """
     Preprocess the data for the neural network model
     One hot encodes the categorical variables
     :param data_:
+    :param categorical_type: 'OH' results in one-hot encoding of the categorical variables
     :return:
     """
     data_full = data_.copy()
@@ -50,11 +51,12 @@ def preprocess(data_):
     data_full['BonusMalus'] = (data_full['BonusMalus'] - data_full['BonusMalus'].mean()) / data_full['BonusMalus'].std()
     data_full['Density'] = (data_full['Density'] - data_full['Density'].mean()) / data_full['Density'].std()
 
-    # Transform Vehicle Brand/Vehicle Gas/Region/Area to one-hot encoding
-    data_full = pd.get_dummies(data_full, columns=['VehBrand'], dtype=int)
-    data_full = pd.get_dummies(data_full, columns=['VehGas'], dtype=int)
-    data_full = pd.get_dummies(data_full, columns=['Region'], dtype=int)
-    data_full = pd.get_dummies(data_full, columns=['Area'], dtype=int)
+    if categorical_type == 'OH':
+        # Transform Vehicle Brand/Vehicle Gas/Region/Area to one-hot encoding
+        data_full = pd.get_dummies(data_full, columns=['VehBrand'], dtype=int)
+        data_full = pd.get_dummies(data_full, columns=['VehGas'], dtype=int)
+        data_full = pd.get_dummies(data_full, columns=['Region'], dtype=int)
+        data_full = pd.get_dummies(data_full, columns=['Area'], dtype=int)
 
     # Create binary target for zero vs. non-zero claims
     data_full['HasClaim'] = (data_full['ClaimAmount'] > 0).astype(int)
@@ -141,7 +143,7 @@ def train_regressor(train_data):
     loss_fn = nn.SmoothL1Loss()
     optimizer = optim.Adam(model.parameters(), lr=0.0001)
 
-    LogClaimAmount = torch.Tensor(train_data['LogClaimAmount'].values).to(device)
+    LogClaimAmount = torch.Tensor(train_data['ClaimAmount'].values).to(device)
     train_data = torch.Tensor(
         train_data.drop(columns=['IDpol', 'ClaimAmount', 'LogClaimAmount', 'HasClaim']).values
     ).to(device)

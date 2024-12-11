@@ -35,6 +35,13 @@ def load_data():
     data_merged["Region"] = data_merged["Region"].astype("category")
     data_merged["ClaimAmount"] = data_merged["ClaimAmount"].astype(float)
 
+    # Some preprocessing
+    # Clip density to 10000, Driver age to 90, VehAge to 30 and BonusMalus to 125
+    data_merged["Density"] = data_merged["Density"].clip(upper=10000)
+    data_merged["DrivAge"] = data_merged["DrivAge"].clip(upper=90)
+    data_merged["VehAge"] = data_merged["VehAge"].clip(upper=30)
+    data_merged["BonusMalus"] = data_merged["BonusMalus"].clip(upper=125)
+
     return data_merged
 
 
